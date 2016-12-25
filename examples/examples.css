@@ -8,6 +8,10 @@ h1 {
 p {
     text-align: center;
 }
+.imageCanvas {
+    border : 1px black solid;    
+    margin : 10px;
+}
 .canvasStyle {
     border : 1px black solid;
     margin : 10px;

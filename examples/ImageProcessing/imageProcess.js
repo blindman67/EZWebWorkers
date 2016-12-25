@@ -3,10 +3,13 @@ function processExample(){
     imageStatus.textContent = "Loading image!";
     exampleStart = undefined;
     var canvas,ctx;
+    
+    // Load image and set things up.
     var image = new Image();
     image.src = "owl.jpg";
     image.onload = function(){
         canvas = document.createElement("canvas");
+        canvas.className = "imageCanvas";
         canvas.width = this.width;
         canvas.height = this.height;
         ctx = canvas.getContext("2d");
@@ -16,20 +19,16 @@ function processExample(){
         startProcess.addEventListener("click",processImageStart);
         addOptions();
     }
+    // Add filter select options
     function addOptions(){
         for(var i in filters){
             var opt = document.createElement("option");
             opt.value = i;
             opt.innerHTML = i;
-            filterType.appendChild(opt);
-            var opt = document.createElement("option");
-            opt.value = i;
-            opt.innerHTML = i;            
-            filterMixType.appendChild(opt);
-            
+            filterType.appendChild(opt);            
         }
     }
-    
+    // Creates a blur filter
     function createBlurFilter(size){
         var a = [];
         for(var i = 0; i < size * size; i++){
@@ -37,8 +36,9 @@ function processExample(){
         }
         return a;
     }        
+    
+    // Convolution filters
     const filters = {
-        none : null,
         blur : createBlurFilter(3),
         blurMore : createBlurFilter(5),
         blurLots : createBlurFilter(7),
@@ -63,44 +63,64 @@ function processExample(){
             
     }
         
+    //******************************************************************************************************************
+    // Start the image processing
+    // When a worker is created it may take a moment of two to create the worker context.
+    // Also the data for the image needs to be obtained and passed to the worker. Depending on the device it may take a 
+    // second or two.
+    // Thus this function first just set the status then calls ProcessImage.
+    //******************************************************************************************************************
     
     function processImageStart(){
-        startProcess.value = "Creating worker for filter " + filterType.value + " mixed with " + filterMixType.value;
+        startProcess.value = "Creating worker for filter " + filterType.value;
         setTimeout(processImage,0);
     }
+
+    //******************************************************************************************************************
+    // Creates a worker and send it a job containing the filter, and pixels.
+    // When the worker is done the processed callback puts the pixels onto the image and then closes the worker.
+    //******************************************************************************************************************    
     function processImage(){
+        // Create a worker from the function imageProcessingWorker
         var workerID = EZWebWorkers.create(imageProcessingWorker);
+        // setup the data to send to the worker
         var data = {
             usePhotonCount : true,
             filter : filters[filterType.value],
-            mixFilter : filters[filterMixType.value],
+            mixFilter : null,
             imageData : ctx.getImageData(0,0,canvas.width,canvas.height),
             processRed : true,
             processGreen : true,
             processBlue : true,
             processAlpha : false,
         }
+        // Create the job for the new worker
         EZWebWorkers.addJob(
-            workerID,
-            data,
-            function(data){
-                ctx.putImageData(data.imageData,0,0);
-                EZWebWorkers.close(workerID);
-                startProcess.value = "Job Complete";
+            workerID,  // Id of worker
+            data,      // The data to send to the worker
+            function(data){   // The complete callback
+                ctx.putImageData(data.imageData,0,0);  // put the data onto the image
+                EZWebWorkers.close(workerID);          // request the worker close
+                startProcess.value = "Job Complete";   
                 setTimeout(function(){startProcess.value = "Process!";},1500);
             },
-            function(progress){
+            function(progress){  // Display the progress
                 startProcess.value = "Processing "+ progress+"%";
             }
         );
     }
     
     
-    const imageProcessingWorker = function(){
-        
+    //******************************************************************************************************************
+    // Worker function
+    // workerFunction is created as the worker
+    //******************************************************************************************************************    
+    const imageProcessingWorker = function(){      
+        //******************************************************************************************************************
+        // Worker function
+        // workerFunction(dataIn) dataIn is the data sent to the worker
+        //******************************************************************************************************************      
         function workerFunction(dataIn){  // convolution filter
-            // dataIn should have the imageData, the filter, and the flag usePhotonCount
-
             var mixFilter,filter, mSide, mHalfSide, imageData, imageDataResult, R, B, G, A, ind, w, h, data, data1, side, halfSide, mix, mixA, a, r, g, b, c, x, y, cy, cx, scx,scy, srcOff, wt, pixelCount, processed;
             dataIn.usePhotonCount = dataIn.usePhotonCount === undefined ? true : dataIn.usePhotonCount;
             if(dataIn.filter !== null){
@@ -222,13 +242,20 @@ function processExample(){
                             data1[ind+3] = A ? Math.max(0,a) : data[ind + 3];
                         }
                     }
+                    //==================================================================================================
+                    // Send a progress message ever 64k pixels processed
+                    //==================================================================================================                    
                     processed += 1;
                     if(processed % (1024 * 64) === 0){
                         progressMessage(Math.floor((processed / pixelCount) * 100));
                     }
                 }
             }
+            //==================================================================================================
+            // Set the image data to the new pixel values            
             imageData.data.set(data1);
+            //==================================================================================================
+            // Return the data back to the main page.
             return dataIn;
         }
     }
