@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html id="topDoc">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-8">
+        <title>EZWebWorkers Image processing/</title>
+        <meta name="keywords" content="web workers, JavaScript, EZWebWorkers, Image processing, Mark Spronck" />
+        <meta name="description" content="EZWebWorkers.js Easy to use interface for creating and managing web workers from JavaScript. Example page Mandelbrot rendering using web workers" />
+        <meta name="author" content="Mark Spronck" />
+        <link rel="stylesheet" type="text/css" href="../examples.css">
+        <script src = "../exampleExtras.js"></script>
+        <script src = "../../EZWebWorkers.js"></script>
+
+    </head>
+    <body id="doc">
+        <h1>EZWebWorkers.js Image processing example.</h1>
+        <p>Click process to process the image.<a href="../examples.html">Back to examples.</a></p>
+        <p>This example creates a web worker each time it is needed to process the image.</p>
+        <p>The filters are all convolution filters. The mix filter if selected applies both filters. The mix filter is applied and the brightness of the result is compared to the original pixel. The difference is used to mix the amount of the main filter per pixel.If the main filter is none then the filter result is the mix amount per pixel.</p>
+        
+        <div class = "uiContainer" id = "mainUI">
+        <div id="imageStatus"></div>
+        Filter : <select id="filterType" ></select><br>
+        Mix Filter : <select id="filterMixType" ></select><br>
+        <input type = "button" id="startProcess" value="Process"></input>
+        <div id="imageContainer"></div>
+        </div>
+        <script src = "imageProcess.js"></script>
+    </body>
+</html>

@@ -52,7 +52,9 @@ runFunction
 
 ```
 
-As easy as that. The worker will process that data and then the myWorkerFinished call back is call when the data is done.
+As easy as that. The worker will process that data and then the myWorkerFinished call back is called when the worker has finished processing the data.
+
+##Parallel processing
 
 If you have data that can be processed in parallel it is easy to spawn many workers to handle one work queue.
 
@@ -78,6 +80,18 @@ If you have data that can be processed in parallel it is easy to spawn many work
 All free workers will be given the jobs from the queue. When a worker has finished a job and there are more jobs on the queue it is given the next job. All workers will be kept busy till all jobs are done.
     
 Important NOTE. Even though jobs will always be handed to workers in the order they are placed on the job queue, some job may take longer than others to complete. This means that the job complete callback may not be called in the order of the jobs assigned. You should include in the data you pass to the worker via the queue some information regarding the context of the job. See the examples for morte information.
+
+##A word on Multi threading.
+
+Each worker when created gets its own context and thread. They can only share data via the messaging API which is hidden from the EZWebWorkers API. 
+
+Workers provide two advantages over using the main Javascript context (on the page).
+- Workers run on a separate threads. If the hardware has multiple cores (CPUs) you can process data in parallel. For example a modern PC can have 8 (or more) cores allowing you to process data 8 times as quickly. 
+ But be aware that creating more workers than there are cores will not give a extra performance, as each worker must share the processing time between all the threads. Thus on a PC with 8 core you start up 16 workers the overall processing time may be lower than using 8 as the over head of switching between threads, the extra memory, etc will reduce the amount of CPU cycles available to the workers. 
+ Also note that your page is not the only process running on the device. Just because a device has many cores they may be used by other applications and must be shared.
+- Workers are non blocking. When the worker is processing data, it does not block the pages, allowing the user to still interact with the page.
+
+**Warning** Each thread consumes extra CPU power, and thus power. Machines that rely on batteries can have the battery drained very quickly when using web workers. It can also cause the machine to heat up, making it turn on its fans further reducing battery life. If you intend to use workers for extended time to process data you should give the user some warning and provide options to use fewer threads. You may also want to include some processing breaks to allow the device to cool down.  
 
         
 ##The EZWebWorkers API

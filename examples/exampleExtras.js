@@ -12,7 +12,6 @@ function setupCanvas(){
         if(restartFunction !== undefined){
             restartFunction(exampleStart);
         }
-        console.log("Resized " + canvas.width + ":" + canvas.height)
     }
 }
 var debouncer = {};
