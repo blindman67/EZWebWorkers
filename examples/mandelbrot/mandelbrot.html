@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html id="topDoc">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-8">
+        <title>EZWebWorkers Mandelbrot/</title>
+        <meta name="keywords" content="web workers, JavaScript, EZWebWorkers, Mandelbrot, Mark Spronck" />
+        <meta name="description" content="EZWebWorkers.js Easy to use interface for creating and managing web workers from JavaScript. Example page Mandelbrot rendering using web workers" />
+        <meta name="author" content="Mark Spronck" />
+        <link rel="stylesheet" type="text/css" href="../examples.css">
+        <script src = "../exampleExtras.js"></script>
+        <script src = "../../EZWebWorkers.js"></script>
+
+    </head>
+    <body id="doc">
+        <h1>EZWebWorkers.js Mandelbrot example.</h1>
+        <p>Click and drag to select zoom area.<a href="../examples.html">Back to examples.</a></p>
+        <div class = "uiContainer" id = "mainUI">
+            <p id="statusText"></p>
+            <div class = "rangeContainer" >
+                <span>Number of workers : </span><span id = "numberOfWorkersElement" class="gSlider" data-slider-vals="1,32,1" data-value="8" data-size="300"></span>     
+            </div>
+            <div class = "rangeContainer" >
+                <span>Slice size: </span><span id = "sliceSizeElement" class="gSlider" data-slider-vals="8,128,8" data-value="32" data-size="300"></span>     
+            </div>
+            <div class = "rangeContainer" >
+                <span>Super sample : </span><span id = "superSampleElement" class="gSlider" data-slider-vals="1,8,1" data-value="2" data-size="300"></span>     
+            </div>
+        </div>
+        <div class="canvasContainer">
+            <canvas class = "canvasStyle" id = "displayCanvas"></canvas>
+        </div>        
+        <script src = "mandelbrot.js"></script>
+    </body>
+</html>
