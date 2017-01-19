@@ -81,6 +81,40 @@ All free workers will be given the jobs from the queue. When a worker has finish
     
 Important NOTE. Even though jobs will always be handed to workers in the order they are placed on the job queue, some job may take longer than others to complete. This means that the job complete callback may not be called in the order of the jobs assigned. You should include in the data you pass to the worker via the queue some information regarding the context of the job. See the examples for morte information.
 
+###Transferable data
+Some data types in javascript are transferable. Typed arrays area an example of transferable data. If you wish data to be exchanged via the transferable protocol you should mark the data as transferable in the data you seen.
+
+Note that transferred data is removed from the sender and no longer available.
+Note that transferred data once received can not be transferred but must be redefined as a transferable object.
+EG
+```
+    // send a transferable array to a worker
+    // Assuming a worker has been created and is running
+    var myData = new Uint8Array(512 * 512 * 4); // create a pixel buffer
+    fillWithPixels(myData);  // put data in the array
+    EZWebWorkers.addJob(workerID, {transfer : myData.buffer});
+    console.log("myData.length = " + myData.length); // myData.length = 0
+       
+```
+
+At the worker the data is received in the transfer property of the data.
+
+```
+    workerFunction(data){
+         var pixelData = data.transfer; // note it is a arrayBuffer and can not be accessed unless you convert it to an typed array 
+    }
+```    
+To resend the data as a transferable object you need to redefine the data as a transferable object.
+
+```
+    workerFunction(data){
+         var pixelData = new Uint8Array(data.transfer);
+         // do work on the pixel data
+         return {transfer : pixelData.buffer}
+    }
+```
+Note that there is not error checking currently for transferable. I am not entirely happy with the different browsers, in particulate with Chrome running out of memory when using transferable arrays. 
+
 ##A word on Multi threading.
 
 Each worker when created gets its own context and thread. They can only share data via the messaging API which is hidden from the EZWebWorkers API. 

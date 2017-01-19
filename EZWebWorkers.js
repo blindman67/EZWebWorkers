@@ -46,7 +46,12 @@ var EZWebWorkers = (function(){
                     postMessage({type : "System", id : workerID, message : "Alive"});
                 }
             }else if (type === "Run") {
-                postMessage({type : "Result", id : workerID, result : workerFunction(e.data.args)});
+                var returnData = workerFunction(e.data.args);
+                if(returnData && returnData.transfer !== undefined){
+                    postMessage({type : "Result", id : workerID, result : returnData},[returnData.transfer]);                    
+                }else{
+                    postMessage({type : "Result", id : workerID, result : returnData});
+                }
             }
         }
         var progressMessage = function(p) {
@@ -114,6 +119,21 @@ var EZWebWorkers = (function(){
             shutDown(worker.id);
         }
     }
+    //
+    //**************************************************************************
+    // Post job to worker
+    function postJob(worker,job){
+        if(job.args.transfer !== undefined){
+            worker.postMessage({type : "Run", args : job.args},[job.args.transfer]);
+        }else{
+            worker.postMessage({type : "Run", args : job.args});
+        }
+        worker.completeCallback = job.completeCallback;
+        worker.progressCallback = job.progressCallback;   
+        worker.errorCallback = job.errorCallback;
+        worker.busy = true;
+        
+    }
     //**************************************************************************
     // handle incoming messages
     function workerMessage (e) {
@@ -128,11 +148,7 @@ var EZWebWorkers = (function(){
                 if (job.close) {            // is it a close command
                     close(job.who, true);   // force worker to close
                 } else {                    // just a normal job send it.
-                    worker.postMessage({type : "Run", args : job.args});
-                    worker.completeCallback = job.completeCallback;
-                    worker.progressCallback = job.progressCallback;   
-                    worker.errorCallback = job.errorCallback;
-                    worker.busy = true;
+                    postJob(worker, job);
                 }
             } else {  // no jobs so flag worker as not busy
                 worker.busy = false;
@@ -180,7 +196,7 @@ var EZWebWorkers = (function(){
                 if(typeof worker.progressCallback === "function"){  // is there a progress callback
                     worker.progressCallback(e.data.progress); // call it
                 }else if(typeof worker.callbacks.progress === "function"){
-                    worker.callbacks.progress(e.data.result,id,API);
+                    worker.callbacks.progress(e.data.progress);
                 }
             }
         }
@@ -278,11 +294,13 @@ var EZWebWorkers = (function(){
             worker = workers[workerRef.jobQueue.workers[i]];
             if(worker !== undefined){  // is there a worker??
                 if(worker.ready && !worker.busy){
-                    worker.postMessage({type:"Run",args:data}); // send run command and data
-                    worker.completeCallback = callbackResult;  // set the callbacks
-                    worker.progressCallback = progressCallback;
-                    worker.errorCallback = errorCallback;
-                    worker.busy = true;   // flag as busy
+                    postJob(worker, {
+                        args : data,
+                        completeCallback : callbackResult,
+                        errorCallback : errorCallback,
+                        progressCallback : progressCallback,
+                    });
+                    return true;
                 }
             }
         }
