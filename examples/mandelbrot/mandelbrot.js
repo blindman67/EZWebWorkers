@@ -175,7 +175,13 @@ function mandelbrotExample(){
     // create the workers
     //==================================================================================================================
     function addWorker(){
-        return EZWebWorkers.create(mandelbrotWorker,mandelbrotQueue,workerCompleteCallback);
+        return EZWebWorkers.create(
+            mandelbrotWorker,
+            {
+                jobQueue : mandelbrotQueue,
+                completeCallback : workerCompleteCallback
+            }
+        );
     }
     function popWorker(){
         var wID = workerIDs.pop();

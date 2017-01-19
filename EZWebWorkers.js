@@ -97,23 +97,19 @@ var EZWebWorkers = (function(){
         if(worker.ready){
             if(worker.busy){
                 if(worker.errorCallback !== undefined){
-                    if(worker.errorCallback(worker.id,e)){
+                    if(worker.errorCallback(worker.id,e) === true){
                         shutDown(worker.id);
                         return;
                     }
                 } else if(worker.callbacks.error !== undefined){
-                    if(worker.callbacks.error(worker.id, e)){
+                    if(worker.callbacks.error(worker.id, e) === true){
                         shutDown(worker.id);
                         return;
                     }
-                    
                 }
                 worker.postMessage({type:"System",message:"?"});
-                worker.waitHandle = setTimeout(function(){
-                    shutDown(worker.id);
-                },RESPOND_TIMEOUT)
+                worker.waitHandle = setTimeout(function(){ shutDown(worker.id);},RESPOND_TIMEOUT);
             }
-            
         }else{
             shutDown(worker.id);
         }
@@ -153,6 +149,9 @@ var EZWebWorkers = (function(){
                 message = e.data.message;
                 if (message === "OK") {
                     worker.ready = true;
+                    if(typeof worker.callbacks.ready === "function"){
+                        worker.callbacks.ready(id);
+                    }
                     nextJob();
                 } else if (message === "Closing") {
                     if(typeof worker.callbacks.closed === "function"){
@@ -211,12 +210,14 @@ var EZWebWorkers = (function(){
     // with the function createQueue and pass the queue as the second argument
     // for all workers you want to share jobs with.
     // Callbacks are optional
-    function createWorker(func,jobQueue,completeCallback,progressCallback,errorCallback,closeCallback){
+    function createWorker(func,options = {}){
+    //function createWorker(func,jobQueue,completeCallback,progressCallback,errorCallback,closeCallback){
         var URL, blob, BlobBuilder, functionStr, id, worker;
+        options = Object.assign({}, options, { jobQueue : {queue : [], workers : []},} );
         id = getID();
         // create worker source code string.
         functionStr = '"use strict";\n' + "var isWorker = true;\n var workerID = '" + id + "';\n";
-        functionStr += functionToString(func); 
+        functionStr += functionToString(func).replace(/^function .+?\)/,""); 
         functionStr += "\n";
         functionStr += workerCom;
         URL = window.URL || window.webkitURL;
@@ -231,13 +232,14 @@ var EZWebWorkers = (function(){
         worker = new Worker(URL.createObjectURL(blob));
         worker.addEventListener("message", workerMessage);
         worker.addEventListener("error", workerError);
-        worker.jobQueue = jobQueue !== undefined && jobQueue !== null ? jobQueue : {queue : [], workers : []};
+        worker.jobQueue = options.jobQueue;
         worker.jobQueue.workers.push(id);
         worker.callbacks = {
-            complete : completeCallback,
-            progress : progressCallback,
-            error : errorCallback,
-            closed : closeCallback,
+            complete : options.completeCallback,
+            progress : options.progressCallback,
+            error : options.errorCallback,
+            closed : options.closeCallback,
+            ready : options.readyCallback,
         };
         worker.busy = false;
         worker.id = id;

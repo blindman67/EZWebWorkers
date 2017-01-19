@@ -48,7 +48,7 @@ runFunction
     }
 
     // Now add a job for the worker
-    EZWebWorkers.run(myWorkerID, dataToProcess, myWorkerFinished);
+    EZWebWorkers.addJob(myWorkerID, dataToProcess, myWorkerFinished);
 
 ```
 
@@ -106,13 +106,18 @@ EZWebWorkers has the following interface. Note arguments inside [ ] are optional
 - **shutDown([workerID])**
 
 
-###create(func, [jobQueue], [completeCallback], [progressCallback], [errorCallback], [closeCallback])
+###create(func, [options])
 
 Creates a worker from a function and returns a workerID. The workerID is used to assign jobs, close and shutdown the worker.
 
 Arguments
 
 - **func** The function from which to create a worker from. EZWebWorkers will extract the contained workerFunction and span a worker from the source code. You can not immediately invoke code, to have any code run you must pass a job to the worker.
+- **[options]** Options is optional. IF given it can contain the following properties.
+
+####options properties
+All properties are optional
+
 - **jobQueue** Optional if not supplied a new job queue is created for the worker. If you have work that needs to be done in parallel you can create a separate job queue. All workers with the same job queue will be given jobs from that queue. To access a job queue you need the ID of one of the workers on the queue.
 - **completeCallback** Optional. The callback function that is called when a job is complete. If not supplied then you must specify the completeCallback when you add a job to the job queue. Teh callback function receives one argument. `function myCompleteteCallback(data){` which is the data returned by the worker function.
 - **progressCallback** Optional. This callback is not required. If supplied it is called when ever the worker function sends a progress message. The callback takes the form of function `myProgressCallback(progress)` the argument progress can be anything you wish. To send a progress message from the worker just call `progressMessage(progValue)` and the `progressCallback` if assigned a function will automatically be called with the argument `progValue`. You may wish to use the progress callback to pass interim data.
@@ -120,7 +125,7 @@ Arguments
  NOTE that when a worker has thrown an error it is assumed that it can no longer function correctly. The worker will automatically be shutdown and will not be available for any further jobs. All data processed by the worker for the current job will be lost.
 - **closeCallback** Optional. If given this callback is called when the worker closes.The callback function takes the form `workerClosingCallback(workerID, EZWebWorkersReference)` where workerID is the ID of the closed worker and `EZWebWorkersReference` is just a reference to the EZWebWorker API
  Note the reference to the API for this callback is there currently as legacy support (From when EZWebWorkers was a dynamicly created object) and may be removed at any time. If you need to access the API do it directly with `EZWebWorkers`
-
+- **readyCallback** Optional. Is called when the worker reports ready status.
 
 ###createQueue()
 Returns a queue object. If you have a parallel processing job you will need to have many workers assigned to the same job queue. Use this function to create a queue and pass it as the second argument when creating a worker (see EZWebWorkers.create for more info).
@@ -195,6 +200,21 @@ These include some variables and function that you can use.
         postMessage({type : "Progress", id : workerID, progress : data});
     }    
 ``` 
+
+
+
+###Important changes
+
+**19 Jan 2017** 
+Added worker ready callback that is called with the workerID as first argument when worker reports ready.
+EZWebWrokers.create(workerFuncContainer,options) Changed and now has two arguments the first is the worker function and the second is options. Options is optional. Options contains
+- jobQueue : /* a valid job queue or leave undefined */,
+- readyCallback : /* function called when worker reports ready */
+- completeCallback : /* function called when a worker has completed a job */
+- progressCallback : /* function called when a worker send a progress message */
+- errorCallback : /* function called when there is an error that prevents the worker from completing a job */ NOTE that returning true from this callback will force the worker to close (if it can) returning anything !== true will try to keep the worker alive. You will have to make sure you shut down the worker yourself.
+- closeCallback : /* function called when worker has sent a acknowledgement of clean shutdown and been shutdown */
+      
 
 
 
